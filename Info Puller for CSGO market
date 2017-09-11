@@ -1,0 +1,52 @@
+import requests
+from bs4 import BeautifulSoup
+import base64
+from tkinter import *
+from urllib.request import urlopen
+import re
+
+
+root = Tk()
+
+search = input("Search for:")
+params = {"q": search}
+r = requests.get("https://steamcommunity.com/market/search?appid=730", params=params)
+
+soup = BeautifulSoup(r.text, "html.parser")
+results = soup.find_all("a", {"class": "market_listing_row_link"})
+for skin in results:
+    item_volume = skin.find("span", {"class": "market_listing_num_listings_qty"})
+    item_price = skin.find("span", {"class": "normal_price"})
+    item_name = skin.find("span", {"class": "market_listing_item_name"})
+    img_url = skin.find("img").attrs["src"]
+
+    vol= str(item_volume).replace('<span class="market_listing_num_listings_qty">', 'Quantity: ').replace('</span>', '')
+    price = str(item_price).replace('<span class="market_table_value normal_price">', '') \
+        .replace('Starting at:<br/>', '').replace('<span class="normal_price">', 'Starting at:') \
+        .replace('</span>', '').replace('<span class="sale_price">', 'Seller gets:')
+    name = re.search(r';">.+', str(item_name)).group().replace(';">', '').replace('</span>', '')
+
+
+    image_url = img_url
+    image_byt = urlopen(image_url).read()
+    image_b64 = base64.encodestring(image_byt)
+    photo = PhotoImage(data=image_b64)
+    text1 = Text(root, height=15, width=15)
+
+    text1.image_create(END, image=photo)
+    
+    text1.pack(side=LEFT)
+    
+    text2 = Text(root, height=20, width=50)
+    
+    text2.tag_configure('bold_italics', font=('Arial', 12, 'bold', 'italic'))
+    text2.tag_configure('big', font=('Verdana', 12, 'bold'))
+    text2.tag_configure('go', font=('Tempus Sans ITC', 12, 'bold'))
+    
+    text2.insert(END, name, 'big')
+    text2.insert(END, '\n')
+    text2.insert(END, vol, 'follow')
+    text2.insert(END, price, 'follow')
+    text2.pack(side=LEFT)
+
+    root.mainloop()
